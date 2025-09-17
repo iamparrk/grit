@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>습관 달력 · 21-Day (모바일 개선)</title>
+  <style>
+    :root{
+      --bg:#0b0b10; --panel:#12121a; --muted:#aab0c0; --fg:#eef3ff;
+      --accent:#6ea8ff; --grid:#2a2d3e; --on:#2cc98a22; --on-border:#2cc98a88;
+      --hover:#ffffff10; --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;color:var(--fg);background:var(--bg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Helvetica,Arial,sans-serif;}
+    .wrap{max-width:1200px;margin:0 auto;padding:10px 12px 96px}
+    h1{font-size:22px;margin:0 0 4px}
+    .sub{color:var(--muted);font-size:12px;margin:4px 0 10px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+    .toolbar .controls{display:flex;gap:8px;align-items:center}
+    .btn{background:#ffffff10;border:1px solid #ffffff20;border-radius:12px;color:var(--fg);padding:8px 12px;cursor:pointer}
+    .btn:hover{background:var(--hover)}
+    .btn.primary{background:var(--accent);border-color:transparent;color:#06122b}
+    .panel{background:var(--panel);border:1px solid #ffffff12;border-radius:var(--radius);overflow:hidden}
+    .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+    @media(min-width:800px){.stats{grid-template-columns:repeat(4,minmax(0,1fr));}}
+    .stat{padding:10px 12px;border:1px solid #ffffff10;border-radius:12px;background:#ffffff05}
+    .stat .cap{font-size:12px;color:var(--muted)}
+    .stat .num{font-weight:700;font-size:18px}
+    .gridWrap{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; border-radius:var(--radius); margin-top:10px}
+    table{border-collapse:separate;border-spacing:0; min-width: 1100px; width:100%;}
+    thead th{position:sticky;top:0;background:#ffffff10;backdrop-filter:saturate(140%) blur(6px);}
+    th,td{border-left:1px solid var(--grid)}
+    th:first-child, td:first-child{border-left:none}
+    th{font-weight:600;color:#d7def0}
+    .rowHead{position:sticky;left:0;background:linear-gradient(90deg,var(--panel),#0000);backdrop-filter:saturate(140%) blur(6px);}
+    .hcell{padding:10px 12px;min-width:130px}
+    .dayhead{padding:6px 4px;text-align:center}
+    .dayBadge{display:grid;place-items:center;margin:0 auto;width:32px;height:32px;border-radius:10px;background:#ffffff0a;border:1px solid #ffffff14;font-weight:600}
+    .today .dayBadge{background:#2b59ff33;border-color:#7aa2ff}
+    tbody td{padding:10px 6px;text-align:center;cursor:pointer;user-select:none; white-space:nowrap;}
+    tbody td:hover{background:var(--hover)}
+    tbody td.on{background:var(--on);border-top:1px solid var(--on-border);border-bottom:1px solid var(--on-border)}
+    .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}
+    .footer{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:linear-gradient(#0000,#0006 18%,#000a);padding:10px 12px;backdrop-filter:blur(6px);}
+    .footer .btn{border-radius:999px}
+    .mute{color:var(--muted);font-size:12px}
+    .quick{display:flex;gap:8px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="toolbar">
+      <div>
+        <h1>습관 달력 · 21-Day</h1>
+        <div class="sub">월별 달력에 4가지 루틴을 날짜별로 체크합니다. (기록은 이 기기(localStorage)에 저장)</div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="prevBtn">이전</button>
+        <div class="btn mute" id="ymText"></div>
+        <button class="btn" id="nextBtn">다음</button>
+        <button class="btn primary" id="thisBtn">이번 달</button>
+      </div>
+    </header>
+
+    <div class="quick">
+      <button class="btn" id="jumpCal">달력으로 이동</button>
+      <button class="btn" id="toggleStats">요약 접기/펴기</button>
+    </div>
+
+    <section class="stats" id="statsBox">
+      <div class="stat"><div class="cap">독서</div><div class="num" id="stat-read">0</div></div>
+      <div class="stat"><div class="cap">복싱</div><div class="num" id="stat-boxing">0</div></div>
+      <div class="stat"><div class="cap">청소</div><div class="num" id="stat-clean">0</div></div>
+      <div class="stat"><div class="cap">지출기록</div><div class="num" id="stat-spend">0</div></div>
+    </section>
+
+    <section class="gridWrap panel calendar" id="calendarBox">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </section>
+
+    <div class="legend">
+      <span>□ 미완료</span>
+      <span>✅ 완료</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="btn" id="checkToday">오늘 4개 모두 체크</button>
+    <button class="btn" id="uncheckToday">오늘 모두 해제</button>
+    <button class="btn" id="backup">백업(JSON)</button>
+    <label class="btn" style="cursor:pointer">불러오기
+      <input type="file" id="restore" accept="application/json" style="display:none">
+    </label>
+    <button class="btn" id="resetMonth">이번 달 전체 초기화</button>
+  </div>
+
+  <script>
+    const HABITS = [
+      { key: "read", label: "독서", time: "07:00" },
+      { key: "boxing", label: "복싱", time: "18:00" },
+      { key: "clean", label: "청소", time: "20:00" },
+      { key: "spend", label: "지출기록", time: "20:30" },
+    ];
+    const STORAGE_KEY = "habit-calendar-v1";
+    const $ = (sel) => document.querySelector(sel);
+    function daysInMonth(y, m){ return new Date(y, m+1, 0).getDate(); }
+    function pad(n){ return String(n).padStart(2,"0"); }
+    function keyOf(y,m,d,h){ return `${y}-${pad(m+1)}-${pad(d)}:${h}`; }
+    function todayInfo(){ const t=new Date(); return {y:t.getFullYear(), m:t.getMonth(), d:t.getDate()}; }
+    let state = { y: new Date().getFullYear(), m: new Date().getMonth(), store: {} };
+    try { const raw = localStorage.getItem(STORAGE_KEY); state.store = raw ? JSON.parse(raw) : {}; } catch(e){ state.store = {}; }
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.store)); }
+    function render(){
+      const {y,m} = state;
+      const total = daysInMonth(y,m);
+      $("#ymText").textContent = `${y}년 ${m+1}월`;
+      const counts = {read:0, boxing:0, clean:0, spend:0};
+      for(let d=1; d<=total; d++){ for(const h of Object.keys(counts)){ if(state.store[keyOf(y,m,d,h)]) counts[h]++; } }
+      $("#stat-read").textContent = `${counts.read} / ${total}`;
+      $("#stat-boxing").textContent = `${counts.boxing} / ${total}`;
+      $("#stat-clean").textContent = `${counts.clean} / ${total}`;
+      $("#stat-spend").textContent = `${counts.spend} / ${total}`;
+      const thead = $("#thead"); thead.innerHTML = "";
+      const trh = document.createElement("tr");
+      const th0 = document.createElement("th");
+      th0.className="rowHead hcell"; th0.textContent = "시간/습관"; trh.appendChild(th0);
+      const t = todayInfo();
+      for(let d=1; d<=total; d++){
+        const th = document.createElement("th"); th.className="dayhead";
+        const div = document.createElement("div"); div.className="dayBadge"; div.textContent = d;
+        if (t.y===y && t.m===m && t.d===d) th.classList.add("today");
+        th.appendChild(div); trh.appendChild(th);
+      }
+      thead.appendChild(trh);
+      const tbody = $("#tbody"); tbody.innerHTML = "";
+      HABITS.forEach(h=>{
+        const tr = document.createElement("tr");
+        const tdHead = document.createElement("td");
+        tdHead.className = "rowHead hcell";
+        tdHead.innerHTML = `<div style='font-weight:700'>${h.label}</div><div style='color:var(--muted);font-size:12px'>${h.time}</div>`;
+        tr.appendChild(tdHead);
+        for(let d=1; d<=total; d++){
+          const td = document.createElement("td");
+          const on = !!state.store[keyOf(y,m,d,h.key)];
+          if(on) td.classList.add("on");
+          td.textContent = on ? "✅" : "□";
+          td.title = `${y}-${pad(m+1)}-${pad(d)} · ${h.label}`;
+          td.addEventListener("click", ()=>{
+            const k = keyOf(y,m,d,h.key);
+            if(state.store[k]) delete state.store[k]; else state.store[k] = 1;
+            save();
+            td.classList.toggle("on");
+            td.textContent = state.store[k] ? "✅" : "□";
+          });
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+    }
+    $("#prevBtn").addEventListener("click", ()=>{ state.m--; if(state.m<0){state.m=11; state.y--;} render(); });
+    $("#nextBtn").addEventListener("click", ()=>{ state.m++; if(state.m>11){state.m=0; state.y++;} render(); });
+    $("#thisBtn").addEventListener("click", ()=>{ const t=todayInfo(); state.y=t.y; state.m=t.m; render(); });
+    $("#checkToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ state.store[keyOf(state.y,state.m,t.d,h.key)] = 1; } save(); render(); });
+    $("#uncheckToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ delete state.store[keyOf(state.y,state.m,t.d,h.key)]; } save(); render(); });
+    $("#backup").addEventListener("click", ()=>{
+      const a = document.createElement("a");
+      const blob = new Blob([JSON.stringify(state.store,null,2)], {type:"application/json"});
+      a.href = URL.createObjectURL(blob);
+      a.download = `habit-calendar-backup-${state.y}-${String(state.m+1).padStart(2,'0')}.json`;
+      a.click(); URL.revokeObjectURL(a.href);
+    });
+    $("#restore").addEventListener("change", (e)=>{
+      const file = e.target.files && e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{ try{ const data = JSON.parse(reader.result); if(data && typeof data==='object'){ state.store=data; save(); alert('불러오기 완료!'); render(); }} catch(err){ alert('JSON 형식 오류'); } };
+      reader.readAsText(file); e.target.value = '';
+    });
+    $("#resetMonth").addEventListener("click", ()=>{
+      if(!confirm("이 달의 모든 체크를 초기화할까요?")) return;
+      const {y,m} = state;
+      for(let d=1; d<=daysInMonth(y,m); d++){ for(const h of HABITS){ delete state.store[keyOf(y,m,d,h.key)]; } }
+      save(); render();
+    });
+
+    // 달력으로 점프 / 요약 접기
+    $("#jumpCal").addEventListener("click", ()=>{ document.getElementById("calendarBox").scrollIntoView({behavior:'smooth', block:'start'}); });
+    let statsOpen = true;
+    $("#toggleStats").addEventListener("click", ()=>{
+      statsOpen = !statsOpen;
+      document.getElementById("statsBox").style.display = statsOpen ? '' : 'none';
+    });
+
+    // 모바일에서 열면 자동으로 달력으로 스크롤 (요약만 보이고 끝나는 문제 방지)
+    (function init(){
+      const t = todayInfo(); state.y=t.y; state.m=t.m; render();
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        setTimeout(()=>document.getElementById('calendarBox').scrollIntoView({behavior:'smooth', block:'start'}), 200);
+      }
+    })();
+  </script>
+</body>
+</html>

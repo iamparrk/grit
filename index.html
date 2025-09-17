@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>습관 달력 · 21-Day (모바일 개선)</title>
+  <title>습관 달력 · 21-Day (모바일 개선 + 동기화)</title>
   <style>
     :root{
       --bg:#0b0b10; --panel:#12121a; --muted:#aab0c0; --fg:#eef3ff;
@@ -47,6 +47,15 @@
     .mute{color:var(--muted);font-size:12px}
     .quick{display:flex;gap:8px;margin-top:8px}
   </style>
+
+  <!-- Supabase SDK -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    // 🔧 여기에 본인 프로젝트 값 입력 (Project Settings → API)
+    const SB_URL  = "https://YOUR-PROJECT-REF.supabase.co";
+    const SB_ANON = "YOUR-ANON-PUBLIC-KEY";
+    const supabase = window.supabase.createClient(SB_URL, SB_ANON);
+  </script>
 </head>
 <body>
   <div class="wrap">
@@ -66,6 +75,15 @@
     <div class="quick">
       <button class="btn" id="jumpCal">달력으로 이동</button>
       <button class="btn" id="toggleStats">요약 접기/펴기</button>
+    </div>
+
+    <!-- 로그인 박스 -->
+    <div id="authBox" style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap">
+      <input id="emailInput" type="email" placeholder="이메일"
+            style="padding:8px;border-radius:10px;border:1px solid #ffffff22;background:#0000;color:#fff;min-width:220px">
+      <button id="loginBtn" class="btn">로그인/메일 링크</button>
+      <button id="logoutBtn" class="btn">로그아웃</button>
+      <span id="whoami" class="mute"></span>
     </div>
 
     <section class="stats" id="statsBox">
@@ -100,10 +118,10 @@
 
   <script>
     const HABITS = [
-    { key: "read", label: "독서", time: "07:00~07:30" },
-  { key: "boxing", label: "복싱", time: "18:00~19:00" },
-  { key: "clean", label: "청소", time: "20:00~20:10" },
-  { key: "spend", label: "지출기록", time: "20:30~20:40" },
+      { key: "read",   label: "독서",     time: "07:00~07:30" },
+      { key: "boxing", label: "복싱",     time: "18:00~19:00" },
+      { key: "clean",  label: "청소",     time: "20:00~20:10" },
+      { key: "spend",  label: "지출기록", time: "20:30~20:40" },
     ];
     const STORAGE_KEY = "habit-calendar-v1";
     const $ = (sel) => document.querySelector(sel);
@@ -111,9 +129,68 @@
     function pad(n){ return String(n).padStart(2,"0"); }
     function keyOf(y,m,d,h){ return `${y}-${pad(m+1)}-${pad(d)}:${h}`; }
     function todayInfo(){ const t=new Date(); return {y:t.getFullYear(), m:t.getMonth(), d:t.getDate()}; }
+
     let state = { y: new Date().getFullYear(), m: new Date().getMonth(), store: {} };
     try { const raw = localStorage.getItem(STORAGE_KEY); state.store = raw ? JSON.parse(raw) : {}; } catch(e){ state.store = {}; }
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.store)); }
+
+    // ===== Supabase Auth/Sync =====
+    let currentUser = null;
+
+    async function updateSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      currentUser = session?.user || null;
+      const who = document.getElementById('whoami');
+      if (who) who.textContent = currentUser ? `로그인: ${currentUser.email}` : '(로그인 필요)';
+      if (currentUser) { await loadMonthFromDB(); }
+    }
+
+    document.addEventListener('click', async (e)=>{
+      if (e.target && e.target.id === 'loginBtn') {
+        const email = document.getElementById('emailInput').value.trim();
+        if(!email) return alert('이메일을 입력하세요');
+        const { error } = await supabase.auth.signInWithOtp({
+          email, options:{ emailRedirectTo: window.location.href }
+        });
+        if (error) alert(error.message); else alert('메일함에서 로그인 링크를 눌러주세요!');
+      }
+      if (e.target && e.target.id === 'logoutBtn') {
+        await supabase.auth.signOut(); currentUser=null; updateSession();
+      }
+    });
+
+    supabase.auth.onAuthStateChange((_e,_s)=>updateSession());
+
+    async function loadMonthFromDB(){
+      if (!currentUser) return;
+      const { data, error } = await supabase
+        .from('habits')
+        .select('y,m,d,habit_key,checked')
+        .eq('user_id', currentUser.id)
+        .eq('y', state.y).eq('m', state.m);
+      if (error) { console.warn('DB load error', error.message); return; }
+      (data||[]).forEach(row=>{
+        const k = keyOf(row.y, row.m, row.d, row.habit_key);
+        if (row.checked) state.store[k] = 1; else delete state.store[k];
+      });
+      save();
+      render();
+    }
+
+    async function toggleAndSync(day, habitKey){
+      const k = keyOf(state.y, state.m, day, habitKey);
+      const nowOn = !state.store[k];
+      if (nowOn) state.store[k]=1; else delete state.store[k];
+      save();
+      render();
+      if (currentUser){
+        const payload = { user_id: currentUser.id, y: state.y, m: state.m, d: day, habit_key: habitKey, checked: nowOn };
+        const { error } = await supabase.from('habits').upsert(payload, { onConflict: 'user_id,y,m,d,habit_key' });
+        if (error) console.warn('DB upsert error', error.message);
+      }
+    }
+
+    // ===== 렌더링 =====
     function render(){
       const {y,m} = state;
       const total = daysInMonth(y,m);
@@ -124,6 +201,7 @@
       $("#stat-boxing").textContent = `${counts.boxing} / ${total}`;
       $("#stat-clean").textContent = `${counts.clean} / ${total}`;
       $("#stat-spend").textContent = `${counts.spend} / ${total}`;
+
       const thead = $("#thead"); thead.innerHTML = "";
       const trh = document.createElement("tr");
       const th0 = document.createElement("th");
@@ -136,6 +214,7 @@
         th.appendChild(div); trh.appendChild(th);
       }
       thead.appendChild(trh);
+
       const tbody = $("#tbody"); tbody.innerHTML = "";
       HABITS.forEach(h=>{
         const tr = document.createElement("tr");
@@ -149,21 +228,28 @@
           if(on) td.classList.add("on");
           td.textContent = on ? "✅" : "□";
           td.title = `${y}-${pad(m+1)}-${pad(d)} · ${h.label}`;
-          td.addEventListener("click", ()=>{
-            const k = keyOf(y,m,d,h.key);
-            if(state.store[k]) delete state.store[k]; else state.store[k] = 1;
-            save();
-            td.classList.toggle("on");
-            td.textContent = state.store[k] ? "✅" : "□";
-          });
+          // ✅ 여기 한 줄만 유지 (이전 직접토글 코드는 모두 삭제)
+          td.addEventListener("click", ()=>{ toggleAndSync(d, h.key); });
           tr.appendChild(td);
         }
         tbody.appendChild(tr);
       });
     }
-    $("#prevBtn").addEventListener("click", ()=>{ state.m--; if(state.m<0){state.m=11; state.y--;} render(); });
-    $("#nextBtn").addEventListener("click", ()=>{ state.m++; if(state.m>11){state.m=0; state.y++;} render(); });
-    $("#thisBtn").addEventListener("click", ()=>{ const t=todayInfo(); state.y=t.y; state.m=t.m; render(); });
+
+    // 버튼들
+    $("#prevBtn").addEventListener("click", async ()=>{
+      state.m--; if(state.m<0){state.m=11; state.y--;}
+      if (currentUser) await loadMonthFromDB(); else render();
+    });
+    $("#nextBtn").addEventListener("click", async ()=>{
+      state.m++; if(state.m>11){state.m=0; state.y++;}
+      if (currentUser) await loadMonthFromDB(); else render();
+    });
+    $("#thisBtn").addEventListener("click", async ()=>{
+      const t=todayInfo(); state.y=t.y; state.m=t.m;
+      if (currentUser) await loadMonthFromDB(); else render();
+    });
+
     $("#checkToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ state.store[keyOf(state.y,state.m,t.d,h.key)] = 1; } save(); render(); });
     $("#uncheckToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ delete state.store[keyOf(state.y,state.m,t.d,h.key)]; } save(); render(); });
     $("#backup").addEventListener("click", ()=>{
@@ -194,12 +280,13 @@
       document.getElementById("statsBox").style.display = statsOpen ? '' : 'none';
     });
 
-    // 모바일에서 열면 자동으로 달력으로 스크롤 (요약만 보이고 끝나는 문제 방지)
+    // 초기화
     (function init(){
       const t = todayInfo(); state.y=t.y; state.m=t.m; render();
       if (window.matchMedia('(max-width: 768px)').matches) {
         setTimeout(()=>document.getElementById('calendarBox').scrollIntoView({behavior:'smooth', block:'start'}), 200);
       }
+      updateSession(); // 로그인 상태 확인 → 필요 시 DB 로드
     })();
   </script>
 </body>

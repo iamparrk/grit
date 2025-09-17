@@ -6,10 +6,12 @@
   <title>습관 달력 · 21-Day</title>
   <style>
     :root{--bg:#0b0b10;--panel:#12121a;--muted:#aab0c0;--fg:#eef3ff;--accent:#6ea8ff;--grid:#2a2d3e;--on:#2cc98a22;--on-border:#2cc98a88;--hover:#ffffff10;--radius:16px}
-    *{box-sizing:border-box} html,body{margin:0;height:100%;color:var(--fg);background:var(--bg);
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;color:var(--fg);background:var(--bg);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Helvetica,Arial,sans-serif}
     .wrap{max-width:1200px;margin:0 auto;padding:10px 12px 96px}
-    h1{font-size:22px;margin:0 0 4px} .sub{color:var(--muted);font-size:12px;margin:4px 0 10px}
+    h1{font-size:22px;margin:0 0 4px}
+    .sub{color:var(--muted);font-size:12px;margin:4px 0 10px}
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
     .toolbar .controls{display:flex;gap:8px;align-items:center}
     .btn{background:#ffffff10;border:1px solid #ffffff20;border-radius:12px;color:var(--fg);padding:8px 12px;cursor:pointer}
@@ -18,11 +20,14 @@
     .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
     @media(min-width:800px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
     .stat{padding:10px 12px;border:1px solid #ffffff10;border-radius:12px;background:#ffffff05}
-    .stat .cap{font-size:12px;color:var(--muted)} .stat .num{font-weight:700;font-size:18px}
+    .stat .cap{font-size:12px;color:var(--muted)}
+    .stat .num{font-weight:700;font-size:18px}
     .gridWrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-radius:var(--radius);margin-top:10px}
     table{border-collapse:separate;border-spacing:0;min-width:1100px;width:100%}
     thead th{position:sticky;top:0;background:#ffffff10;backdrop-filter:saturate(140%) blur(6px)}
-    th,td{border-left:1px solid var(--grid)} th:first-child,td:first-child{border-left:none} th{font-weight:600;color:#d7def0}
+    th,td{border-left:1px solid var(--grid)}
+    th:first-child,td:first-child{border-left:none}
+    th{font-weight:600;color:#d7def0}
     .rowHead{position:sticky;left:0;background:linear-gradient(90deg,var(--panel),#0000);backdrop-filter:saturate(140%) blur(6px)}
     .hcell{padding:10px 12px;min-width:130px}
     .dayhead{padding:6px 4px;text-align:center}
@@ -33,16 +38,19 @@
     tbody td.on{background:var(--on);border-top:1px solid var(--on-border);border-bottom:1px solid var(--on-border)}
     .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}
     .footer{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:linear-gradient(#0000,#0006 18%,#000a);padding:10px 12px;backdrop-filter:blur(6px)}
-    .footer .btn{border-radius:999px} .mute{color:var(--muted);font-size:12px} .quick{display:flex;gap:8px;margin-top:8px}
+    .footer .btn{border-radius:999px}
+    .mute{color:var(--muted);font-size:12px}
+    .quick{display:flex;gap:8px;margin-top:8px}
   </style>
 
   <!-- Supabase SDK + 설정 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // 🔧 여기에 본인 프로젝트 값 입력 (Project Settings → API)
+    // 🔧 본인 프로젝트 값으로 교체
     const SB_URL  = "https://YOUR-PROJECT-REF.supabase.co";   // 예: https://mvcqbpqugmkqfijpjgop.supabase.co
-    const SB_ANON = "YOUR-ANON-PUBLIC-KEY";                    // eyJhbGc... 로 시작
+    const SB_ANON = "YOUR-ANON-PUBLIC-KEY";                    // eyJhbGc... 전체
     const supabase = window.supabase.createClient(SB_URL, SB_ANON);
+    const REDIRECT_TO = "https://iamparrk.github.io/grit/";    // Auth 허용 URL에도 동일하게 등록
   </script>
 </head>
 <body>
@@ -117,7 +125,7 @@
     function todayInfo(){ const t=new Date(); return {y:t.getFullYear(), m:t.getMonth(), d:t.getDate()}; }
 
     let state = { y:new Date().getFullYear(), m:new Date().getMonth(), store:{} };
-    try { const raw = localStorage.getItem(STORAGE_KEY); state.store = raw ? JSON.parse(raw) : {}; } catch{ state.store = {}; }
+    try { const raw = localStorage.getItem(STORAGE_KEY); state.store = raw ? JSON.parse(raw) : {}; } catch { state.store = {}; }
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.store)); }
 
     // ===== Supabase Auth & Sync =====
@@ -133,9 +141,10 @@
     document.addEventListener('click', async (e)=>{
       if (e.target.id === 'loginBtn') {
         const email = $('#emailInput').value.trim();
-        if(!email) return alert('이메일을 입력하세요');
+        if (!email) return alert('이메일을 입력하세요');
         const { error } = await supabase.auth.signInWithOtp({
-          email, options:{ emailRedirectTo: window.location.href }
+          email,
+          options: { emailRedirectTo: REDIRECT_TO }
         });
         if (error) alert(error.message); else alert('메일함에서 로그인 링크를 눌러주세요!');
       }
@@ -210,7 +219,7 @@
           if(on) td.classList.add("on");
           td.textContent = on ? "✅" : "□";
           td.title = `${y}-${pad(m+1)}-${pad(d)} · ${h.label}`;
-          td.addEventListener("click", ()=>{ toggleAndSync(d, h.key); });  // ← 동기화 버전
+          td.addEventListener("click", ()=>{ toggleAndSync(d, h.key); });
           tr.appendChild(td);
         }
         tbody.appendChild(tr);

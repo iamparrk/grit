@@ -47,8 +47,8 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
     // 🔧 본인 프로젝트 값으로 교체
-    const SB_URL  = "https://mvcqbpqugmkqfijpjgop.supabase.co";   // 예: https://mvcqbpqugmkqfijpjgop.supabase.co
-    const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Y3FicHVnbXFrZmlnaWpwb3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzM1MDYsImV4cCI6MjA3MzY0OTUwNn0.vQHhMOlMj7FoyF4oa3RNx2P49cYz9kPHup7cMW22m2A";                    // eyJhbGc... 전체
+    const SB_URL  = "https://YOUR-PROJECT-REF.supabase.co";   // 예: https://mvcqbpqugmkqfijpjgop.supabase.co
+    const SB_ANON = "YOUR-ANON-PUBLIC-KEY";                    // eyJhbGc... 전체
     const supabase = window.supabase.createClient(SB_URL, SB_ANON);
     const REDIRECT_TO = "https://iamparrk.github.io/grit/";    // Auth 허용 URL에도 동일하게 등록
   </script>
@@ -69,6 +69,7 @@
     </header>
 
     <div class="quick">
+      <button class="btn" id="jumpCal">달력으로 이동</button>
       <button class="btn" id="toggleStats">요약 접기/펴기</button>
     </div>
 

@@ -3,57 +3,45 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>습관 달력 · 21-Day (모바일 개선 + 동기화)</title>
+  <title>습관 달력 · 21-Day</title>
   <style>
-    :root{
-      --bg:#0b0b10; --panel:#12121a; --muted:#aab0c0; --fg:#eef3ff;
-      --accent:#6ea8ff; --grid:#2a2d3e; --on:#2cc98a22; --on-border:#2cc98a88;
-      --hover:#ffffff10; --radius:16px;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;height:100%;color:var(--fg);background:var(--bg);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Helvetica,Arial,sans-serif;}
+    :root{--bg:#0b0b10;--panel:#12121a;--muted:#aab0c0;--fg:#eef3ff;--accent:#6ea8ff;--grid:#2a2d3e;--on:#2cc98a22;--on-border:#2cc98a88;--hover:#ffffff10;--radius:16px}
+    *{box-sizing:border-box} html,body{margin:0;height:100%;color:var(--fg);background:var(--bg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Helvetica,Arial,sans-serif}
     .wrap{max-width:1200px;margin:0 auto;padding:10px 12px 96px}
-    h1{font-size:22px;margin:0 0 4px}
-    .sub{color:var(--muted);font-size:12px;margin:4px 0 10px}
+    h1{font-size:22px;margin:0 0 4px} .sub{color:var(--muted);font-size:12px;margin:4px 0 10px}
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
     .toolbar .controls{display:flex;gap:8px;align-items:center}
     .btn{background:#ffffff10;border:1px solid #ffffff20;border-radius:12px;color:var(--fg);padding:8px 12px;cursor:pointer}
-    .btn:hover{background:var(--hover)}
-    .btn.primary{background:var(--accent);border-color:transparent;color:#06122b}
+    .btn:hover{background:var(--hover)} .btn.primary{background:var(--accent);border-color:transparent;color:#06122b}
     .panel{background:var(--panel);border:1px solid #ffffff12;border-radius:var(--radius);overflow:hidden}
     .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
-    @media(min-width:800px){.stats{grid-template-columns:repeat(4,minmax(0,1fr));}}
+    @media(min-width:800px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
     .stat{padding:10px 12px;border:1px solid #ffffff10;border-radius:12px;background:#ffffff05}
-    .stat .cap{font-size:12px;color:var(--muted)}
-    .stat .num{font-weight:700;font-size:18px}
-    .gridWrap{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; border-radius:var(--radius); margin-top:10px}
-    table{border-collapse:separate;border-spacing:0; min-width: 1100px; width:100%;}
-    thead th{position:sticky;top:0;background:#ffffff10;backdrop-filter:saturate(140%) blur(6px);}
-    th,td{border-left:1px solid var(--grid)}
-    th:first-child, td:first-child{border-left:none}
-    th{font-weight:600;color:#d7def0}
-    .rowHead{position:sticky;left:0;background:linear-gradient(90deg,var(--panel),#0000);backdrop-filter:saturate(140%) blur(6px);}
+    .stat .cap{font-size:12px;color:var(--muted)} .stat .num{font-weight:700;font-size:18px}
+    .gridWrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-radius:var(--radius);margin-top:10px}
+    table{border-collapse:separate;border-spacing:0;min-width:1100px;width:100%}
+    thead th{position:sticky;top:0;background:#ffffff10;backdrop-filter:saturate(140%) blur(6px)}
+    th,td{border-left:1px solid var(--grid)} th:first-child,td:first-child{border-left:none} th{font-weight:600;color:#d7def0}
+    .rowHead{position:sticky;left:0;background:linear-gradient(90deg,var(--panel),#0000);backdrop-filter:saturate(140%) blur(6px)}
     .hcell{padding:10px 12px;min-width:130px}
     .dayhead{padding:6px 4px;text-align:center}
     .dayBadge{display:grid;place-items:center;margin:0 auto;width:32px;height:32px;border-radius:10px;background:#ffffff0a;border:1px solid #ffffff14;font-weight:600}
     .today .dayBadge{background:#2b59ff33;border-color:#7aa2ff}
-    tbody td{padding:10px 6px;text-align:center;cursor:pointer;user-select:none; white-space:nowrap;}
+    tbody td{padding:10px 6px;text-align:center;cursor:pointer;user-select:none;white-space:nowrap}
     tbody td:hover{background:var(--hover)}
     tbody td.on{background:var(--on);border-top:1px solid var(--on-border);border-bottom:1px solid var(--on-border)}
     .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}
-    .footer{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:linear-gradient(#0000,#0006 18%,#000a);padding:10px 12px;backdrop-filter:blur(6px);}
-    .footer .btn{border-radius:999px}
-    .mute{color:var(--muted);font-size:12px}
-    .quick{display:flex;gap:8px;margin-top:8px}
+    .footer{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:linear-gradient(#0000,#0006 18%,#000a);padding:10px 12px;backdrop-filter:blur(6px)}
+    .footer .btn{border-radius:999px} .mute{color:var(--muted);font-size:12px} .quick{display:flex;gap:8px;margin-top:8px}
   </style>
 
-  <!-- Supabase SDK -->
+  <!-- Supabase SDK + 설정 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
     // 🔧 여기에 본인 프로젝트 값 입력 (Project Settings → API)
-    const SB_URL  = "https://YOUR-PROJECT-REF.supabase.co";
-    const SB_ANON = "YOUR-ANON-PUBLIC-KEY";
+    const SB_URL  = "https://YOUR-PROJECT-REF.supabase.co";   // 예: https://mvcqbpqugmkqfijpjgop.supabase.co
+    const SB_ANON = "YOUR-ANON-PUBLIC-KEY";                    // eyJhbGc... 로 시작
     const supabase = window.supabase.createClient(SB_URL, SB_ANON);
   </script>
 </head>
@@ -62,7 +50,7 @@
     <header class="toolbar">
       <div>
         <h1>습관 달력 · 21-Day</h1>
-        <div class="sub">월별 달력에 4가지 루틴을 날짜별로 체크합니다. (기록은 이 기기(localStorage)에 저장)</div>
+        <div class="sub">월별 달력에 4가지 루틴을 날짜별로 체크합니다. (동기화: Supabase)</div>
       </div>
       <div class="controls">
         <button class="btn" id="prevBtn">이전</button>
@@ -80,7 +68,7 @@
     <!-- 로그인 박스 -->
     <div id="authBox" style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap">
       <input id="emailInput" type="email" placeholder="이메일"
-            style="padding:8px;border-radius:10px;border:1px solid #ffffff22;background:#0000;color:#fff;min-width:220px">
+             style="padding:8px;border-radius:10px;border:1px solid #ffffff22;background:#0000;color:#fff;min-width:220px">
       <button id="loginBtn" class="btn">로그인/메일 링크</button>
       <button id="logoutBtn" class="btn">로그아웃</button>
       <span id="whoami" class="mute"></span>
@@ -100,10 +88,7 @@
       </table>
     </section>
 
-    <div class="legend">
-      <span>□ 미완료</span>
-      <span>✅ 완료</span>
-    </div>
+    <div class="legend"><span>□ 미완료</span><span>✅ 완료</span></div>
   </div>
 
   <div class="footer">
@@ -117,6 +102,7 @@
   </div>
 
   <script>
+    // ===== 기본 상태/유틸 =====
     const HABITS = [
       { key: "read",   label: "독서",     time: "07:00~07:30" },
       { key: "boxing", label: "복싱",     time: "18:00~19:00" },
@@ -130,36 +116,34 @@
     function keyOf(y,m,d,h){ return `${y}-${pad(m+1)}-${pad(d)}:${h}`; }
     function todayInfo(){ const t=new Date(); return {y:t.getFullYear(), m:t.getMonth(), d:t.getDate()}; }
 
-    let state = { y: new Date().getFullYear(), m: new Date().getMonth(), store: {} };
-    try { const raw = localStorage.getItem(STORAGE_KEY); state.store = raw ? JSON.parse(raw) : {}; } catch(e){ state.store = {}; }
+    let state = { y:new Date().getFullYear(), m:new Date().getMonth(), store:{} };
+    try { const raw = localStorage.getItem(STORAGE_KEY); state.store = raw ? JSON.parse(raw) : {}; } catch{ state.store = {}; }
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.store)); }
 
-    // ===== Supabase Auth/Sync =====
+    // ===== Supabase Auth & Sync =====
     let currentUser = null;
 
     async function updateSession() {
       const { data: { session } } = await supabase.auth.getSession();
       currentUser = session?.user || null;
-      const who = document.getElementById('whoami');
-      if (who) who.textContent = currentUser ? `로그인: ${currentUser.email}` : '(로그인 필요)';
-      if (currentUser) { await loadMonthFromDB(); }
+      $('#whoami').textContent = currentUser ? `로그인: ${currentUser.email}` : '(로그인 필요)';
+      if (currentUser) await loadMonthFromDB();
     }
 
     document.addEventListener('click', async (e)=>{
-      if (e.target && e.target.id === 'loginBtn') {
-        const email = document.getElementById('emailInput').value.trim();
+      if (e.target.id === 'loginBtn') {
+        const email = $('#emailInput').value.trim();
         if(!email) return alert('이메일을 입력하세요');
         const { error } = await supabase.auth.signInWithOtp({
           email, options:{ emailRedirectTo: window.location.href }
         });
         if (error) alert(error.message); else alert('메일함에서 로그인 링크를 눌러주세요!');
       }
-      if (e.target && e.target.id === 'logoutBtn') {
+      if (e.target.id === 'logoutBtn') {
         await supabase.auth.signOut(); currentUser=null; updateSession();
       }
     });
-
-    supabase.auth.onAuthStateChange((_e,_s)=>updateSession());
+    supabase.auth.onAuthStateChange(()=>updateSession());
 
     async function loadMonthFromDB(){
       if (!currentUser) return;
@@ -169,20 +153,18 @@
         .eq('user_id', currentUser.id)
         .eq('y', state.y).eq('m', state.m);
       if (error) { console.warn('DB load error', error.message); return; }
-      (data||[]).forEach(row=>{
-        const k = keyOf(row.y, row.m, row.d, row.habit_key);
-        if (row.checked) state.store[k] = 1; else delete state.store[k];
+      (data||[]).forEach(r=>{
+        const k = keyOf(r.y, r.m, r.d, r.habit_key);
+        if (r.checked) state.store[k] = 1; else delete state.store[k];
       });
-      save();
-      render();
+      save(); render();
     }
 
     async function toggleAndSync(day, habitKey){
       const k = keyOf(state.y, state.m, day, habitKey);
       const nowOn = !state.store[k];
       if (nowOn) state.store[k]=1; else delete state.store[k];
-      save();
-      render();
+      save(); render();
       if (currentUser){
         const payload = { user_id: currentUser.id, y: state.y, m: state.m, d: day, habit_key: habitKey, checked: nowOn };
         const { error } = await supabase.from('habits').upsert(payload, { onConflict: 'user_id,y,m,d,habit_key' });
@@ -195,6 +177,7 @@
       const {y,m} = state;
       const total = daysInMonth(y,m);
       $("#ymText").textContent = `${y}년 ${m+1}월`;
+
       const counts = {read:0, boxing:0, clean:0, spend:0};
       for(let d=1; d<=total; d++){ for(const h of Object.keys(counts)){ if(state.store[keyOf(y,m,d,h)]) counts[h]++; } }
       $("#stat-read").textContent = `${counts.read} / ${total}`;
@@ -204,12 +187,11 @@
 
       const thead = $("#thead"); thead.innerHTML = "";
       const trh = document.createElement("tr");
-      const th0 = document.createElement("th");
-      th0.className="rowHead hcell"; th0.textContent = "시간/습관"; trh.appendChild(th0);
+      const th0 = document.createElement("th"); th0.className="rowHead hcell"; th0.textContent="시간/습관"; trh.appendChild(th0);
       const t = todayInfo();
       for(let d=1; d<=total; d++){
-        const th = document.createElement("th"); th.className="dayhead";
-        const div = document.createElement("div"); div.className="dayBadge"; div.textContent = d;
+        const th=document.createElement("th"); th.className="dayhead";
+        const div=document.createElement("div"); div.className="dayBadge"; div.textContent=d;
         if (t.y===y && t.m===m && t.d===d) th.classList.add("today");
         th.appendChild(div); trh.appendChild(th);
       }
@@ -217,19 +199,18 @@
 
       const tbody = $("#tbody"); tbody.innerHTML = "";
       HABITS.forEach(h=>{
-        const tr = document.createElement("tr");
-        const tdHead = document.createElement("td");
-        tdHead.className = "rowHead hcell";
-        tdHead.innerHTML = `<div style='font-weight:700'>${h.label}</div><div style='color:var(--muted);font-size:12px'>${h.time}</div>`;
+        const tr=document.createElement("tr");
+        const tdHead=document.createElement("td");
+        tdHead.className="rowHead hcell";
+        tdHead.innerHTML=`<div style='font-weight:700'>${h.label}</div><div style='color:var(--muted);font-size:12px'>${h.time}</div>`;
         tr.appendChild(tdHead);
         for(let d=1; d<=total; d++){
-          const td = document.createElement("td");
-          const on = !!state.store[keyOf(y,m,d,h.key)];
+          const td=document.createElement("td");
+          const on=!!state.store[keyOf(y,m,d,h.key)];
           if(on) td.classList.add("on");
           td.textContent = on ? "✅" : "□";
           td.title = `${y}-${pad(m+1)}-${pad(d)} · ${h.label}`;
-          // ✅ 여기 한 줄만 유지 (이전 직접토글 코드는 모두 삭제)
-          td.addEventListener("click", ()=>{ toggleAndSync(d, h.key); });
+          td.addEventListener("click", ()=>{ toggleAndSync(d, h.key); });  // ← 동기화 버전
           tr.appendChild(td);
         }
         tbody.appendChild(tr);
@@ -250,43 +231,39 @@
       if (currentUser) await loadMonthFromDB(); else render();
     });
 
-    $("#checkToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ state.store[keyOf(state.y,state.m,t.d,h.key)] = 1; } save(); render(); });
+    $("#checkToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ state.store[keyOf(state.y,state.m,t.d,h.key)]=1; } save(); render(); });
     $("#uncheckToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ delete state.store[keyOf(state.y,state.m,t.d,h.key)]; } save(); render(); });
     $("#backup").addEventListener("click", ()=>{
-      const a = document.createElement("a");
-      const blob = new Blob([JSON.stringify(state.store,null,2)], {type:"application/json"});
-      a.href = URL.createObjectURL(blob);
-      a.download = `habit-calendar-backup-${state.y}-${String(state.m+1).padStart(2,'0')}.json`;
+      const a=document.createElement("a");
+      const blob=new Blob([JSON.stringify(state.store,null,2)],{type:"application/json"});
+      a.href=URL.createObjectURL(blob); a.download=`habit-calendar-backup-${state.y}-${String(state.m+1).padStart(2,'0')}.json`;
       a.click(); URL.revokeObjectURL(a.href);
     });
-    $("#restore").addEventListener("change", (e)=>{
-      const file = e.target.files && e.target.files[0]; if(!file) return;
-      const reader = new FileReader();
-      reader.onload = ()=>{ try{ const data = JSON.parse(reader.result); if(data && typeof data==='object'){ state.store=data; save(); alert('불러오기 완료!'); render(); }} catch(err){ alert('JSON 형식 오류'); } };
-      reader.readAsText(file); e.target.value = '';
+    $("#restore").addEventListener("change",(e)=>{
+      const f=e.target.files?.[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=()=>{ try{ const data=JSON.parse(r.result); if(data&&typeof data==='object'){ state.store=data; save(); alert('불러오기 완료!'); render(); } }catch{ alert('JSON 형식 오류'); } };
+      r.readAsText(f); e.target.value='';
     });
     $("#resetMonth").addEventListener("click", ()=>{
       if(!confirm("이 달의 모든 체크를 초기화할까요?")) return;
-      const {y,m} = state;
+      const {y,m}=state;
       for(let d=1; d<=daysInMonth(y,m); d++){ for(const h of HABITS){ delete state.store[keyOf(y,m,d,h.key)]; } }
       save(); render();
     });
 
-    // 달력으로 점프 / 요약 접기
-    $("#jumpCal").addEventListener("click", ()=>{ document.getElementById("calendarBox").scrollIntoView({behavior:'smooth', block:'start'}); });
-    let statsOpen = true;
-    $("#toggleStats").addEventListener("click", ()=>{
-      statsOpen = !statsOpen;
-      document.getElementById("statsBox").style.display = statsOpen ? '' : 'none';
-    });
+    // 기타
+    $("#jumpCal").addEventListener("click", ()=>{ $("#calendarBox").scrollIntoView({behavior:'smooth',block:'start'}); });
+    let statsOpen=true;
+    $("#toggleStats").addEventListener("click", ()=>{ statsOpen=!statsOpen; $("#statsBox").style.display=statsOpen?'':'none'; });
 
     // 초기화
     (function init(){
-      const t = todayInfo(); state.y=t.y; state.m=t.m; render();
-      if (window.matchMedia('(max-width: 768px)').matches) {
-        setTimeout(()=>document.getElementById('calendarBox').scrollIntoView({behavior:'smooth', block:'start'}), 200);
+      const t=todayInfo(); state.y=t.y; state.m=t.m; render();
+      if (window.matchMedia('(max-width:768px)').matches) {
+        setTimeout(()=>$("#calendarBox").scrollIntoView({behavior:'smooth',block:'start'}),200);
       }
-      updateSession(); // 로그인 상태 확인 → 필요 시 DB 로드
+      updateSession();
     })();
   </script>
 </body>

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>습관 달력 · 21-Day</title>
   <style>
+    .btn[disabled]{opacity:.5; cursor:not-allowed}
+    td.readonly{cursor:default}
+
     :root{--bg:#0b0b10;--panel:#12121a;--muted:#aab0c0;--fg:#eef3ff;--accent:#6ea8ff;--grid:#2a2d3e;--on:#2cc98a22;--on-border:#2cc98a88;--hover:#ffffff10;--radius:16px}
     *{box-sizing:border-box}
     html,body{margin:0;height:100%;color:var(--fg);background:var(--bg);
@@ -33,7 +36,7 @@
     .dayhead{padding:6px 4px;text-align:center}
     .dayBadge{display:grid;place-items:center;margin:0 auto;width:32px;height:32px;border-radius:10px;background:#ffffff0a;border:1px solid #ffffff14;font-weight:600}
     .today .dayBadge{background:#2b59ff33;border-color:#7aa2ff}
-    tbody td{padding:10px 6px;text-align:center;cursor:pointer;user-select:none;white-space:nowrap}
+    tbody td{padding:10px 6px;text-align:center;user-select:none;white-space:nowrap}
     tbody td:hover{background:var(--hover)}
     tbody td.on{background:var(--on);border-top:1px solid var(--on-border);border-bottom:1px solid var(--on-border)}
     .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}
@@ -42,23 +45,13 @@
     .mute{color:var(--muted);font-size:12px}
     .quick{display:flex;gap:8px;margin-top:8px}
   </style>
-
-  <!-- Supabase SDK + 설정 -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script>
-    // 🔧 본인 프로젝트 값으로 교체
-    const SB_URL  = "https://YOUR-PROJECT-REF.supabase.co";   // 예: https://mvcqbpqugmkqfijpjgop.supabase.co
-    const SB_ANON = "YOUR-ANON-PUBLIC-KEY";                    // eyJhbGc... 전체
-    const supabase = window.supabase.createClient(SB_URL, SB_ANON);
-    const REDIRECT_TO = "https://iamparrk.github.io/grit/";    // Auth 허용 URL에도 동일하게 등록
-  </script>
 </head>
 <body>
   <div class="wrap">
     <header class="toolbar">
       <div>
         <h1>습관 달력 · 21-Day</h1>
-        <div class="sub">월별 달력에 4가지 루틴을 날짜별로 체크합니다. (저장 : localStorage)</div>
+        <div class="sub">월별 달력에 4가지 루틴을 날짜별로 체크합니다. (저장 : 이 기기의 localStorage)</div>
       </div>
       <div class="controls">
         <button class="btn" id="prevBtn">이전</button>
@@ -69,7 +62,7 @@
     </header>
 
     <div class="quick">
-      <button class="btn" id="jumpCal">달력으로 이동</button>
+      <!-- 요청에 따라 '달력으로 이동'은 제거 -->
       <button class="btn" id="toggleStats">요약 접기/펴기</button>
     </div>
 
@@ -101,6 +94,10 @@
   </div>
 
   <script>
+    // PC/모바일 판별
+    const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+                    || window.matchMedia('(max-width: 768px)').matches;
+
     // ===== 기본 상태/유틸 =====
     const HABITS = [
       { key: "read",   label: "독서",     time: "07:00~07:30" },
@@ -119,72 +116,25 @@
     try { const raw = localStorage.getItem(STORAGE_KEY); state.store = raw ? JSON.parse(raw) : {}; } catch { state.store = {}; }
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.store)); }
 
-    // ===== Supabase Auth & Sync =====
-    let currentUser = null;
-
-    async function updateSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      currentUser = session?.user || null;
-      $('#whoami').textContent = currentUser ? `로그인: ${currentUser.email}` : '(로그인 필요)';
-      if (currentUser) await loadMonthFromDB();
-    }
-
-    document.addEventListener('click', async (e)=>{
-      if (e.target.id === 'loginBtn') {
-        const email = $('#emailInput').value.trim();
-        if (!email) return alert('이메일을 입력하세요');
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: REDIRECT_TO }
-        });
-        if (error) alert(error.message); else alert('메일함에서 로그인 링크를 눌러주세요!');
-      }
-      if (e.target.id === 'logoutBtn') {
-        await supabase.auth.signOut(); currentUser=null; updateSession();
-      }
-    });
-    supabase.auth.onAuthStateChange(()=>updateSession());
-
-    async function loadMonthFromDB(){
-      if (!currentUser) return;
-      const { data, error } = await supabase
-        .from('habits')
-        .select('y,m,d,habit_key,checked')
-        .eq('user_id', currentUser.id)
-        .eq('y', state.y).eq('m', state.m);
-      if (error) { console.warn('DB load error', error.message); return; }
-      (data||[]).forEach(r=>{
-        const k = keyOf(r.y, r.m, r.d, r.habit_key);
-        if (r.checked) state.store[k] = 1; else delete state.store[k];
-      });
-      save(); render();
-    }
-
-    async function toggleAndSync(day, habitKey){
-      const k = keyOf(state.y, state.m, day, habitKey);
-      const nowOn = !state.store[k];
-      if (nowOn) state.store[k]=1; else delete state.store[k];
-      save(); render();
-      if (currentUser){
-        const payload = { user_id: currentUser.id, y: state.y, m: state.m, d: day, habit_key: habitKey, checked: nowOn };
-        const { error } = await supabase.from('habits').upsert(payload, { onConflict: 'user_id,y,m,d,habit_key' });
-        if (error) console.warn('DB upsert error', error.message);
-      }
-    }
-
     // ===== 렌더링 =====
     function render(){
       const {y,m} = state;
       const total = daysInMonth(y,m);
       $("#ymText").textContent = `${y}년 ${m+1}월`;
 
+      // 통계
       const counts = {read:0, boxing:0, clean:0, spend:0};
-      for(let d=1; d<=total; d++){ for(const h of Object.keys(counts)){ if(state.store[keyOf(y,m,d,h)]) counts[h]++; } }
-      $("#stat-read").textContent = `${counts.read} / ${total}`;
+      for(let d=1; d<=total; d++){
+        for(const h of Object.keys(counts)){
+          if(state.store[keyOf(y,m,d,h)]) counts[h]++;
+        }
+      }
+      $("#stat-read").textContent   = `${counts.read} / ${total}`;
       $("#stat-boxing").textContent = `${counts.boxing} / ${total}`;
-      $("#stat-clean").textContent = `${counts.clean} / ${total}`;
-      $("#stat-spend").textContent = `${counts.spend} / ${total}`;
+      $("#stat-clean").textContent  = `${counts.clean} / ${total}`;
+      $("#stat-spend").textContent  = `${counts.spend} / ${total}`;
 
+      // 헤더
       const thead = $("#thead"); thead.innerHTML = "";
       const trh = document.createElement("tr");
       const th0 = document.createElement("th"); th0.className="rowHead hcell"; th0.textContent="시간/습관"; trh.appendChild(th0);
@@ -197,6 +147,7 @@
       }
       thead.appendChild(trh);
 
+      // 본문
       const tbody = $("#tbody"); tbody.innerHTML = "";
       HABITS.forEach(h=>{
         const tr=document.createElement("tr");
@@ -204,45 +155,62 @@
         tdHead.className="rowHead hcell";
         tdHead.innerHTML=`<div style='font-weight:700'>${h.label}</div><div style='color:var(--muted);font-size:12px'>${h.time}</div>`;
         tr.appendChild(tdHead);
+
         for(let d=1; d<=total; d++){
           const td=document.createElement("td");
           const on=!!state.store[keyOf(y,m,d,h.key)];
           if(on) td.classList.add("on");
           td.textContent = on ? "✅" : "□";
           td.title = `${y}-${pad(m+1)}-${pad(d)} · ${h.label}`;
-          td.addEventListener("click", ()=>{ toggleAndSync(d, h.key); });
+
+          if (IS_MOBILE) {
+            td.classList.add("readonly"); // 보기 전용: 클릭 막음
+          } else {
+            td.style.cursor = "pointer";
+            td.addEventListener("click", ()=>{
+              const k = keyOf(y,m,d,h.key);
+              if(state.store[k]) delete state.store[k]; else state.store[k] = 1;
+              save();
+              // 셀만 갱신
+              td.classList.toggle("on");
+              td.textContent = state.store[k] ? "✅" : "□";
+            });
+          }
           tr.appendChild(td);
         }
         tbody.appendChild(tr);
       });
     }
 
-    // 버튼들
-    $("#prevBtn").addEventListener("click", async ()=>{
-      state.m--; if(state.m<0){state.m=11; state.y--;}
-      if (currentUser) await loadMonthFromDB(); else render();
-    });
-    $("#nextBtn").addEventListener("click", async ()=>{
-      state.m++; if(state.m>11){state.m=0; state.y++;}
-      if (currentUser) await loadMonthFromDB(); else render();
-    });
-    $("#thisBtn").addEventListener("click", async ()=>{
-      const t=todayInfo(); state.y=t.y; state.m=t.m;
-      if (currentUser) await loadMonthFromDB(); else render();
-    });
+    // ===== 버튼들 =====
+    $("#prevBtn").addEventListener("click", ()=>{ state.m--; if(state.m<0){state.m=11; state.y--;} render(); });
+    $("#nextBtn").addEventListener("click", ()=>{ state.m++; if(state.m>11){state.m=0; state.y++;} render(); });
+    $("#thisBtn").addEventListener("click", ()=>{ const t=todayInfo(); state.y=t.y; state.m=t.m; render(); });
 
-    $("#checkToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ state.store[keyOf(state.y,state.m,t.d,h.key)]=1; } save(); render(); });
-    $("#uncheckToday").addEventListener("click", ()=>{ const t=todayInfo(); for(const h of HABITS){ delete state.store[keyOf(state.y,state.m,t.d,h.key)]; } save(); render(); });
+    $("#checkToday").addEventListener("click", ()=>{
+      const t=todayInfo();
+      for(const h of HABITS){ state.store[keyOf(state.y,state.m,t.d,h.key)]=1; }
+      save(); render();
+    });
+    $("#uncheckToday").addEventListener("click", ()=>{
+      const t=todayInfo();
+      for(const h of HABITS){ delete state.store[keyOf(state.y,state.m,t.d,h.key)]; }
+      save(); render();
+    });
     $("#backup").addEventListener("click", ()=>{
       const a=document.createElement("a");
       const blob=new Blob([JSON.stringify(state.store,null,2)],{type:"application/json"});
-      a.href=URL.createObjectURL(blob); a.download=`habit-calendar-backup-${state.y}-${String(state.m+1).padStart(2,'0')}.json`;
+      a.href=URL.createObjectURL(blob);
+      a.download=`habit-calendar-backup-${state.y}-${String(state.m+1).padStart(2,'0')}.json`;
       a.click(); URL.revokeObjectURL(a.href);
     });
     $("#restore").addEventListener("change",(e)=>{
       const f=e.target.files?.[0]; if(!f) return;
       const r=new FileReader();
-      r.onload=()=>{ try{ const data=JSON.parse(r.result); if(data&&typeof data==='object'){ state.store=data; save(); alert('불러오기 완료!'); render(); } }catch{ alert('JSON 형식 오류'); } };
+      r.onload=()=>{ try{
+        const data=JSON.parse(r.result);
+        if(data && typeof data==='object'){ state.store=data; save(); alert('불러오기 완료!'); render(); }
+      }catch{ alert('JSON 형식 오류'); } };
       r.readAsText(f); e.target.value='';
     });
     $("#resetMonth").addEventListener("click", ()=>{
@@ -252,18 +220,22 @@
       save(); render();
     });
 
-    // 기타
-    $("#jumpCal").addEventListener("click", ()=>{ $("#calendarBox").scrollIntoView({behavior:'smooth',block:'start'}); });
+    // 요약 접기/펴기
     let statsOpen=true;
-    $("#toggleStats").addEventListener("click", ()=>{ statsOpen=!statsOpen; $("#statsBox").style.display=statsOpen?'':'none'; });
+    $("#toggleStats").addEventListener("click", ()=>{
+      statsOpen=!statsOpen; $("#statsBox").style.display=statsOpen?'':'none';
+    });
 
-    // 초기화
+    // 초기화 + 모바일 버튼 잠금
     (function init(){
       const t=todayInfo(); state.y=t.y; state.m=t.m; render();
-      if (window.matchMedia('(max-width:768px)').matches) {
-        setTimeout(()=>$("#calendarBox").scrollIntoView({behavior:'smooth',block:'start'}),200);
+
+      if (IS_MOBILE) {
+        ['checkToday','uncheckToday','resetMonth'].forEach(id=>{
+          const btn = document.getElementById(id);
+          if (btn) { btn.disabled = true; btn.title = '모바일에서는 보기 전용입니다'; }
+        });
       }
-      updateSession();
     })();
   </script>
 </body>

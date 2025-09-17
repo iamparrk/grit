@@ -50,7 +50,12 @@
     const SB_URL  = "https://mvcqbpqugmkqfijpjgop.supabase.co";   // 예: https://mvcqbpqugmkqfijpjgop.supabase.co
     const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Y3FicHVnbXFrZmlnaWpwb3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNzM1MDYsImV4cCI6MjA3MzY0OTUwNn0.vQHhMOlMj7FoyF4oa3RNx2P49cYz9kPHup7cMW22m2A";                    // eyJhbGc... 전체
     const supabase = window.supabase.createClient(SB_URL, SB_ANON);
-    const REDIRECT_TO = "https://iamparrk.github.io/grit/";    // Auth 허용 URL에도 동일하게 등록
+  // ✅ 항상 /grit/ 로 맞춰지도록 정규화
+  const base = location.origin + location.pathname.replace(/index\.html$/, '');
+  const REDIRECT_TO = base.endsWith('/') ? base : base + '/';
+
+  // Supabase 클라이언트 생성
+  const supabase = window.supabase.createClient(SB_URL, SB_ANON);
   </script>
 </head>
 <body>
